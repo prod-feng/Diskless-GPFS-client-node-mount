@@ -1,0 +1,19 @@
+#
+#/etc/systemd/system/gpfs-diskless-restore.service
+#
+[Unit]
+Description=Restore GPFS configuration on diskless client
+Wants=network-online.target
+After=network-online.target
+Before=gpfs.service
+ConditionPathExists=/usr/lpp/mmfs/bin/mmsdrrestore
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/gpfs-diskless-restore
+TimeoutStartSec=180
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
