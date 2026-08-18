@@ -1,0 +1,45 @@
+#!/bin/bash
+#gpfs-diskless-restore script   
+set -uo pipefail
+
+PATH=/usr/lpp/mmfs/bin:/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+PRIMARY="gpfs-mgr01"
+
+log()
+{
+    echo "$(date '+%F %T') $*"
+    logger -t gpfs-diskless-restore -- "$*"
+}
+
+log "Starting diskless GPFS configuration initialization"
+
+# The GPFS root is in RAM on this diskless node.
+# Therefore /var/mmfs/gen/mmsdrfs disappears on reboot.
+
+if [[ -s /var/mmfs/gen/mmsdrfs ]]; then
+    log "Existing mmsdrfs found; GPFS configuration already present"
+    exit 0
+fi
+
+log "mmsdrfs not present; restoring from ${PRIMARY}"
+
+if ! getent hosts "${PRIMARY}" >/dev/null 2>&1; then
+    log "ERROR: cannot resolve ${PRIMARY}"
+    exit 1
+fi
+
+if ! /usr/lpp/mmfs/bin/mmsdrrestore -p "${PRIMARY}"; then
+    log "ERROR: mmsdrrestore failed"
+    exit 1
+fi
+
+if [[ ! -s /var/mmfs/gen/mmsdrfs ]]; then
+    log "ERROR: mmsdrrestore returned success but mmsdrfs is missing"
+    exit 1
+fi
+
+log "GPFS configuration successfully restored"
+
+exit 0
