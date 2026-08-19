@@ -1,0 +1,23 @@
+# /etc/systemd/system/gpfs.service.d/gpfs-diskless-restore-local.conf
+[Unit]
+Requires=gpfs-diskless-restore.service
+After=gpfs-diskless-restore.service
+
+[fenzhang@dg-mgmt1 ibm]$ cat gpfs-diskless-restore-local.service
+[Unit]
+Description=Restore GPFS CCR configuration on diskless client
+Wants=network-online.target
+After=network-online.target
+Before=gpfs.service
+ConditionPathExists=/usr/lpp/mmfs/bin/mmsdrrestore
+ConditionPathExists=/opt/gpfs/CCRbackup.tar.gz
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/gpfs-diskless-restore
+TimeoutStartSec=300
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
