@@ -1,0 +1,54 @@
+#!/bin/bash
+  
+set -uo pipefail
+
+suffix="$version.$(date +%Y.%m.%d.%H.%M.%S).$(hostname -s)"
+
+BACKUP_DIR="/nfs/gpfs-config"
+BACKUP_FILE="${BACKUP_DIR}/CCRbackup.tar.gz"
+TMP_FILE="${BACKUP_FILE}.new"
+
+PATH=/usr/lpp/mmfs/bin:/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+
+# if [[ $2 == "CCR" ]]
+# then
+#   # Backup the entire CCR repository.
+#   mmccr backup -A /tmp/CCRBackup.$suffix.tar.gz
+#   scp /tmp/CCRBackup.$suffix.tar.gz  backupNode:/backupDir/CCRBackup.$suffix.tar.gz
+# else
+#   # Backup mmsdrfs file.
+#   cp  /var/mmfs/gen/mmsdrfs /tmp/mmsdrfs.$suffix
+#   scp /tmp/mmsdrfs.$suffix  backupNode:/backupDir/mmsdrfs.$suffix
+# fi
+
+logger -t gpfs-mmsdrbackup "Starting CCR backup"
+
+mkdir -p "${BACKUP_DIR}" || {
+    logger -t gpfs-mmsdrbackup "ERROR: cannot create ${BACKUP_DIR}"
+    exit 1
+}
+
+rm -f "${TMP_FILE}"
+
+if ! /usr/lpp/mmfs/bin/mmccr backup -A "${TMP_FILE}"; then
+    logger -t gpfs-mmsdrbackup "ERROR: mmccr backup failed"
+    rm -f "${TMP_FILE}"
+    exit 1
+fi
+
+if [[ ! -s "${TMP_FILE}" ]]; then
+    logger -t gpfs-mmsdrbackup "ERROR: backup file is empty"
+    rm -f "${TMP_FILE}"
+    exit 1
+fi
+
+mv -f "${TMP_FILE}" "${BACKUP_FILE}"
+
+chmod 600 "${BACKUP_FILE}"
+
+logger -t gpfs-mmsdrbackup \
+    "CCR backup successfully updated: ${BACKUP_FILE}"
+
+exit 0
