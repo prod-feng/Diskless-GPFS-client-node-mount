@@ -1,4 +1,6 @@
-GPFS mmsdrestore service, for diskless nodes to restore GPFS confiurations and start mounting.
+# 1 
+
+GPFS mmsdrestore service, from GPFS config/mgmt server, for diskless nodes to restore GPFS confiurations and start mounting.
 
 /etc/systemd/system/gpfs-diskless-restore.service
 
@@ -8,5 +10,6 @@ and
 
 gpfs-diskless-restore, save it to /usr/local/sbin, or elsewhere, but update the pfs-diskless-restore.service file.
 
+# 2
 
 In ./local-backup/ folder, they are for backup and restore to/from local CCR backup, with better performance.
