@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -uo pipefail
+
+PATH=/usr/lpp/mmfs/bin:/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+BACKUP="/opt/gpfs/CCRbackup.tar.gz"
+
+logger -t gpfs-diskless-restore \
+    "Restoring CCR from ${BACKUP}"
+
+if [[ ! -s "${BACKUP}" ]]; then
+    logger -t gpfs-diskless-restore \
+        "ERROR: missing/empty CCR backup"
+    exit 1
+fi
+
+if ! /usr/lpp/mmfs/bin/mmsdrrestore -F "${BACKUP}"; then
+    logger -t gpfs-diskless-restore \
+        "ERROR: mmsdrrestore failed"
+    exit 1
+fi
+
+if [[ ! -d /var/mmfs/ccr/committed ]]; then
+    logger -t gpfs-diskless-restore \
+        "ERROR: CCR committed directory missing"
+    exit 1
+fi
+
+logger -t gpfs-diskless-restore \
+    "CCR restore completed"
+
+exit 0
+
