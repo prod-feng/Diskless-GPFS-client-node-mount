@@ -2,6 +2,7 @@
 #
 # Save it to /var/mmfs/etc/mmsdrbackup
 # GPFS will automatically call it everytime there is any changes on the client cluster.
+# Also you can sync the backup to somewhere else but safe, in case the current quorum node is down.
 #
 set -uo pipefail
 
