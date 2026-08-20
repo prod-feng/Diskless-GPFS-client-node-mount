@@ -18,7 +18,7 @@ In ./local-backup/ folder, they are for backup and restore to/from local CCR bac
 
 One caveat : 
  
-You need to set the GPFS cluster quorum node(s) can be SSH key accessed from all the client nodes.
+You need to set the GPFS client cluster quorum node(s) can be SSH key accessed from all the client nodes.
 
 If you can not set up like this, then look into the LOCAL version in the local folder here.
  
