@@ -1,5 +1,8 @@
 #!/bin/bash
+#
 # Save it to /var/mmfs/etc/mmsdrbackup
+# GPFS will automatically call it everytime there is any changes on the client cluster.
+#
 set -uo pipefail
 
 PATH=/usr/lpp/mmfs/bin:/usr/bin:/usr/sbin:/bin:/sbin
