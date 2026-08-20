@@ -4,9 +4,9 @@ set -uo pipefail
 
 suffix="$version.$(date +%Y.%m.%d.%H.%M.%S).$(hostname -s)"
 
-BACKUP_DIR="/nfs/gpfs-config"
+BACKUP_DIR="/root/gpfs-ccr"
 BACKUP_FILE="${BACKUP_DIR}/CCRbackup.tar.gz"
-TMP_FILE="${BACKUP_FILE}.new"
+TMP_FILE="${BACKUP_FILE}.$suffix"
 
 PATH=/usr/lpp/mmfs/bin:/usr/bin:/usr/sbin:/bin:/sbin
 export PATH
