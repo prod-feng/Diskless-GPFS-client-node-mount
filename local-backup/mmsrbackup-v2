@@ -1,0 +1,80 @@
+#!/bin/bash
+
+set -uo pipefail
+
+PATH=/usr/lpp/mmfs/bin:/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+umask 077
+
+readonly BACKUP_DIR="/root/gpfs-ccr"
+readonly BACKUP_FILE="${BACKUP_DIR}/CCRbackup.tar.gz"
+readonly VERSION="${1:-unknown}"
+readonly REPO_TYPE="${2:-unknown}"
+readonly HOSTNAME="$(hostname -s)"
+readonly TIMESTAMP="$(date '+%Y.%m.%d.%H.%M.%S')"
+readonly TMP_FILE="${BACKUP_FILE}.${VERSION}.${TIMESTAMP}.${HOSTNAME}.tmp"
+
+log()
+{
+    logger -t gpfs-mmsdrbackup -- "$*"
+}
+
+cleanup()
+{
+    rm -f -- "${TMP_FILE}"
+}
+
+trap cleanup EXIT HUP INT TERM
+
+log "Starting CCR backup: version=${VERSION}, repository=${REPO_TYPE}"
+
+# This user exit is intended to handle CCR backups.
+if [[ "${REPO_TYPE}" != "CCR" ]]; then
+    log "Repository type is '${REPO_TYPE}', not CCR; nothing to do"
+    exit 0
+fi
+
+# Create backup directory if necessary.
+if ! mkdir -p -- "${BACKUP_DIR}"; then
+    log "ERROR: cannot create backup directory: ${BACKUP_DIR}"
+    exit 1
+fi
+
+# Verify that the directory is writable.
+if [[ ! -w "${BACKUP_DIR}" ]]; then
+    log "ERROR: backup directory is not writable: ${BACKUP_DIR}"
+    exit 1
+fi
+
+# Create the CCR backup in a temporary file.
+log "Creating CCR backup: ${TMP_FILE}"
+
+if ! /usr/lpp/mmfs/bin/mmccr backup -A "${TMP_FILE}"; then
+    log "ERROR: mmccr backup failed"
+    exit 1
+fi
+
+# Validate the resulting backup.
+if [[ ! -s "${TMP_FILE}" ]]; then
+    log "ERROR: CCR backup was not created or is empty"
+    exit 1
+fi
+
+# Set permissions before making the backup visible as the current backup.
+if ! chmod 600 "${TMP_FILE}"; then
+    log "ERROR: cannot set permissions on temporary backup"
+    exit 1
+fi
+
+# Atomically replace the previous good backup.
+if ! mv -f -- "${TMP_FILE}" "${BACKUP_FILE}"; then
+    log "ERROR: cannot replace ${BACKUP_FILE}"
+    exit 1
+fi
+
+BACKUP_SIZE="$(du -h "${BACKUP_FILE}" 2>/dev/null | awk '{print $1}')"
+
+log "CCR backup successfully updated: ${BACKUP_FILE} (${BACKUP_SIZE}, version=${VERSION})"
+
+exit 0
