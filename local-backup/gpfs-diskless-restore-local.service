@@ -1,9 +1,4 @@
-# /etc/systemd/system/gpfs.service.d/gpfs-diskless-restore-local.conf
-[Unit]
-Requires=gpfs-diskless-restore.service
-After=gpfs-diskless-restore.service
 
-[fenzhang@dg-mgmt1 ibm]$ cat gpfs-diskless-restore-local.service
 [Unit]
 Description=Restore GPFS CCR configuration on diskless client
 Wants=network-online.target
