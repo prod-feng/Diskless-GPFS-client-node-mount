@@ -1,0 +1,118 @@
+#!/bin/bash
+
+set -uo pipefail
+
+PATH=/usr/lpp/mmfs/bin:/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+umask 077
+
+readonly BACKUP_DIR="/root/gpfs-ccr"
+readonly ARCHIVE_DIR="${BACKUP_DIR}/archive"
+readonly LATEST_LINK="${BACKUP_DIR}/CCRbackup.tar.gz"
+readonly RETENTION=30
+
+readonly VERSION="${1:-unknown}"
+readonly REPO_TYPE="${2:-unknown}"
+readonly HOSTNAME="$(hostname -s)"
+readonly TIMESTAMP="$(date '+%Y.%m.%d.%H.%M.%S')"
+
+readonly BACKUP_NAME="CCRbackup.${VERSION}.${TIMESTAMP}.${HOSTNAME}.tar.gz"
+readonly BACKUP_FILE="${ARCHIVE_DIR}/${BACKUP_NAME}"
+readonly TMP_FILE="${ARCHIVE_DIR}/.${BACKUP_NAME}.tmp"
+
+log()
+{
+    logger -t gpfs-mmsdrbackup -- "$*"
+}
+
+cleanup()
+{
+    rm -f -- "${TMP_FILE}"
+}
+
+trap cleanup EXIT HUP INT TERM
+
+log "Starting CCR backup: version=${VERSION}, repository=${REPO_TYPE}"
+
+# Only process CCR repositories.
+if [[ "${REPO_TYPE}" != "CCR" ]]; then
+    log "Repository type is '${REPO_TYPE}'; CCR backup not required"
+    exit 0
+fi
+
+# Create directories.
+if ! mkdir -p -- "${ARCHIVE_DIR}"; then
+    log "ERROR: cannot create backup directory: ${ARCHIVE_DIR}"
+    exit 1
+fi
+
+if [[ ! -w "${ARCHIVE_DIR}" ]]; then
+    log "ERROR: backup directory is not writable: ${ARCHIVE_DIR}"
+    exit 1
+fi
+
+# Create CCR backup in a temporary file.
+log "Creating CCR backup: ${TMP_FILE}"
+
+if ! /usr/lpp/mmfs/bin/mmccr backup -A "${TMP_FILE}"; then
+    log "ERROR: mmccr backup failed"
+    exit 1
+fi
+
+# Validate backup.
+if [[ ! -s "${TMP_FILE}" ]]; then
+    log "ERROR: CCR backup is missing or empty"
+    exit 1
+fi
+
+# Secure permissions.
+if ! chmod 600 "${TMP_FILE}"; then
+    log "ERROR: cannot set permissions on ${TMP_FILE}"
+    exit 1
+fi
+
+# Move completed backup into the archive.
+if ! mv -f -- "${TMP_FILE}" "${BACKUP_FILE}"; then
+    log "ERROR: cannot install backup: ${BACKUP_FILE}"
+    exit 1
+fi
+
+# Update the "latest" backup symlink.
+if ! ln -sfn -- "${BACKUP_FILE}" "${LATEST_LINK}"; then
+    log "WARNING: cannot update latest backup link"
+else
+    log "Latest backup: ${LATEST_LINK}"
+fi
+
+# Retain only the newest RETENTION backups.
+#
+# Filenames contain the timestamp, so lexical sorting gives
+# chronological order.
+OLD_BACKUPS=$(
+    find "${ARCHIVE_DIR}" \
+        -maxdepth 1 \
+        -type f \
+        -name 'CCRbackup.*.tar.gz' \
+        -printf '%T@ %p\n' 2>/dev/null |
+    sort -nr |
+    awk "NR > ${RETENTION} { \$1=\"\"; sub(/^ /, \"\"); print }"
+)
+
+if [[ -n "${OLD_BACKUPS}" ]]; then
+    while IFS= read -r old_backup; do
+        [[ -n "${old_backup}" ]] || continue
+
+        if rm -f -- "${old_backup}"; then
+            log "Removed old backup: ${old_backup}"
+        else
+            log "WARNING: cannot remove old backup: ${old_backup}"
+        fi
+    done <<< "${OLD_BACKUPS}"
+fi
+
+BACKUP_SIZE="$(du -h "${BACKUP_FILE}" 2>/dev/null | awk '{print $1}')"
+
+log "CCR backup successfully completed: ${BACKUP_FILE} (${BACKUP_SIZE})"
+
+exit 0
