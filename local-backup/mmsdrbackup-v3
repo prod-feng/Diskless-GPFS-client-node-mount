@@ -19,7 +19,8 @@ readonly TIMESTAMP="$(date '+%Y.%m.%d.%H.%M.%S')"
 
 readonly BACKUP_NAME="CCRbackup.${VERSION}.${TIMESTAMP}.${HOSTNAME}.tar.gz"
 readonly BACKUP_FILE="${ARCHIVE_DIR}/${BACKUP_NAME}"
-readonly TMP_FILE="${ARCHIVE_DIR}/.${BACKUP_NAME}.tmp"
+#mmccr backup -A will append .tar to a filename, it not ending with tar or tar.gz
+readonly TMP_FILE="${ARCHIVE_DIR}/.tmp.${BACKUP_NAME}"
 
 log()
 {
