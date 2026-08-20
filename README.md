@@ -20,5 +20,7 @@ One caveat :
  
 You need to set the GPFS client cluster quorum node(s) can be SSH key accessed from all the client nodes.
 
-If you can not set up like this, then look into the LOCAL version in the local folder here.
+If you can not set up like this, then look into the LOCAL version in the "local-backup" folder here.
+
+For the "local-backup", if you use diskless PXE booting, then you need to find a way to sync the newest backup file into the image.
  
