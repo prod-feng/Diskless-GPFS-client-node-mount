@@ -24,7 +24,12 @@ readonly TMP_FILE="${ARCHIVE_DIR}/.tmp.${BACKUP_NAME}"
 
 log()
 {
-    logger -t gpfs-mmsdrbackup -- "$*"
+    #e.g., >DEBUG=1  ./mmsdrbackup-v3 1.0 CCR, for debuging
+    if [[ "$DEBUG" == 1 ]]; then
+        printf '%s\n' "$*" >&2
+    else
+        logger -t gpfs-mmsdrbackup -- "$*"
+    fi
 }
 
 cleanup()
