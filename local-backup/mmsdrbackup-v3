@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Save it to /var/mmfs/etc/mmsdrbackup
 set -uo pipefail
 
 PATH=/usr/lpp/mmfs/bin:/usr/bin:/usr/sbin:/bin:/sbin
